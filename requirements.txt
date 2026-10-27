@@ -1,0 +1,4 @@
+# Runtime dependencies for the initial local prototype
+# This project intentionally keeps the first version dependency-light to stay local and easy to run.
+
+pytest>=8.0.0

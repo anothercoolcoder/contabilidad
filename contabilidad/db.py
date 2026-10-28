@@ -120,6 +120,12 @@ class LocalDatabase:
         payload["validation_notes"] = json.loads(payload["validation_notes"] or "[]")
         return payload
 
+    def list_users(self) -> list[dict]:
+        rows = self.connection.execute(
+            "SELECT * FROM users ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_documents(self, user_id: Optional[str] = None) -> list[dict]:
         if user_id:
             rows = self.connection.execute(

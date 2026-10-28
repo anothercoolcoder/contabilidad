@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contabilidad local</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17231f;
+      --muted: #64736c;
+      --line: #dce5df;
+      --paper: #ffffff;
+      --canvas: #f3f7f4;
+      --green: #176b4a;
+      --green-dark: #10563a;
+      --pale: #e4f2e9;
+      --red: #a22d2d;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--canvas); }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 22px max(24px, calc((100% - 1180px) / 2));
+      color: white;
+      background: #123d2e;
+    }
+    h1 { margin: 0; font-size: 1.3rem; letter-spacing: -.02em; }
+    header p { margin: 5px 0 0; color: #c9ded2; font-size: .9rem; }
+    .local-badge { border: 1px solid #78a991; border-radius: 999px; padding: 7px 12px; color: #e0f3e8; font-size: .8rem; white-space: nowrap; }
+    main { width: min(1180px, calc(100% - 40px)); margin: 28px auto 48px; }
+    .intro { margin-bottom: 20px; }
+    .intro h2 { margin: 0 0 6px; font-size: 1.45rem; }
+    .intro p, .subtle { color: var(--muted); line-height: 1.5; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat, .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 3px 12px #203c2a08; }
+    .stat { padding: 16px 18px; }
+    .stat span { color: var(--muted); font-size: .86rem; }
+    .stat strong { display: block; margin-top: 6px; font-size: 1.55rem; }
+    .layout { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(0, 1.5fr); gap: 18px; align-items: start; }
+    .stack { display: grid; gap: 18px; }
+    .panel { padding: 20px; }
+    .panel h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .panel .subtle { margin: 0 0 16px; font-size: .88rem; }
+    label { display: block; margin: 12px 0 6px; color: #35443d; font-size: .85rem; font-weight: 650; }
+    input, select, textarea {
+      width: 100%; border: 1px solid #cbd8d0; border-radius: 7px; padding: 10px 11px;
+      color: var(--ink); background: white; font: inherit; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px #176b4a1a; }
+    textarea { min-height: 118px; resize: vertical; line-height: 1.45; }
+    button { border: 0; border-radius: 7px; padding: 10px 14px; color: white; background: var(--green); font: inherit; font-weight: 650; cursor: pointer; }
+    button:hover { background: var(--green-dark); }
+    button:disabled { opacity: .6; cursor: wait; }
+    .submit-row { margin-top: 15px; }
+    .notice { margin-top: 12px; padding: 10px 12px; border-radius: 7px; background: #f0f4f1; color: #47564e; font-size: .88rem; }
+    .notice.error { color: var(--red); background: #fff0ef; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: .86rem; }
+    th { padding: 9px 10px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+    td { padding: 10px; border-bottom: 1px solid #edf1ee; vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .empty { padding: 16px 10px; color: var(--muted); text-align: center; }
+    .status { display: inline-block; border-radius: 999px; padding: 4px 8px; background: var(--pale); color: var(--green-dark); font-size: .77rem; white-space: nowrap; }
+    .status.review { color: #80500a; background: #fff1d2; }
+    .result { margin-top: 14px; padding: 14px; border-radius: 8px; background: #f3f7f4; font-size: .87rem; line-height: 1.55; overflow-wrap: anywhere; }
+    .result:empty { display: none; }
+    .footnote { margin: 18px 2px 0; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+      header { padding-inline: 20px; }
+      main { width: min(100% - 28px, 620px); margin-top: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Contabilidad local</h1>
+      <p>Panel de prueba y administración</p>
+    </div>
+    <span class="local-badge">● Solo en este equipo</span>
+  </header>
+  <main>
+    <section class="intro">
+      <h2>Resumen del prototipo</h2>
+      <p>Registra operarios, prueba la extracción básica y revisa los comprobantes guardados en la base local.</p>
+    </section>
+    <section class="stats" aria-label="Resumen">
+      <div class="stat"><span>Usuarios registrados</span><strong id="user-count">0</strong></div>
+      <div class="stat"><span>Comprobantes guardados</span><strong id="document-count">0</strong></div>
+      <div class="stat"><span>Pendientes de revisión</span><strong id="review-count">0</strong></div>
+    </section>
+    <div class="layout">
+      <div class="stack">
+        <section class="panel">
+          <h3>Registrar usuario</h3>
+          <p class="subtle">El teléfono identifica al operario que envía el comprobante.</p>
+          <form id="user-form">
+            <label for="user-name">Nombre</label>
+            <input id="user-name" name="name" autocomplete="name" required>
+            <label for="user-phone">Teléfono</label>
+            <input id="user-phone" name="phone" type="tel" placeholder="+56912345678" required>
+            <label for="employee-id">Identificador del empleado</label>
+            <input id="employee-id" name="employee_id" required>
+            <div class="submit-row"><button type="submit">Registrar usuario</button></div>
+            <div id="user-message" class="notice" role="status" hidden></div>
+          </form>
+        </section>
+        <section class="panel">
+          <h3>Probar comprobante</h3>
+          <p class="subtle">Sube una imagen o PDF para leerlo con OCR local. También puedes probar pegando el texto.</p>
+          <form id="document-form">
+            <label for="document-user">Usuario registrado</label>
+            <select id="document-user" name="phone" required>
+              <option value="">Selecciona un usuario</option>
+            </select>
+            <label for="document-file">Imagen o PDF (máximo 10 MB)</label>
+            <input id="document-file" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.bmp,.webp,application/pdf,image/png,image/jpeg,image/tiff,image/bmp,image/webp">
+            <label for="file-name">Nombre de referencia (si pegas texto)</label>
+            <input id="file-name" name="file_name" placeholder="comprobante.txt">
+            <label for="raw-text">O pega el texto del comprobante</label>
+            <textarea id="raw-text" name="raw_text" placeholder="Factura&#10;Proveedor: ACME&#10;Total: 125000"></textarea>
+            <p class="subtle">Formatos admitidos: PDF, PNG, JPG, TIFF, BMP y WEBP. Los PDF escaneados se convierten por página.</p>
+            <div class="submit-row"><button id="document-submit" type="submit">Leer y procesar</button></div>
+            <div id="document-message" class="notice" role="status" hidden></div>
+            <div id="document-result" class="result" aria-live="polite"></div>
+            <details id="ocr-details" hidden>
+              <summary>Texto reconocido por OCR</summary>
+              <pre id="ocr-text" class="result"></pre>
+            </details>
+          </form>
+        </section>
+      </div>
+      <div class="stack">
+        <section class="panel">
+          <h3>Usuarios</h3>
+          <p class="subtle">Operarios registrados en la base local.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nombre</th><th>Teléfono</th><th>Empleado</th><th>Estado</th></tr></thead>
+              <tbody id="users-body"><tr><td class="empty" colspan="4">Cargando usuarios…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="panel">
+          <h3>Comprobantes</h3>
+          <p class="subtle">Historial de resultados persistidos en SQLite.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Archivo</th><th>Usuario</th><th>Estado</th><th>Proveedor / total</th></tr></thead>
+              <tbody id="documents-body"><tr><td class="empty" colspan="4">Cargando comprobantes…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+    <p class="footnote">Esta interfaz es una herramienta local de prueba y administración. No reemplaza WhatsApp como canal previsto para los usuarios de campo. OCR real, integración con WhatsApp y validación contable avanzada aún están pendientes.</p>
+  </main>
+  <script>
+    const userForm = document.querySelector("#user-form");
+    const documentForm = document.querySelector("#document-form");
+    const userSelect = document.querySelector("#document-user");
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...options.headers },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || `Error HTTP ${response.status}`);
+      return payload;
+    }
+
+    async function requestUpload(formData) {
+      const response = await fetch("/api/documents/upload", { method: "POST", body: formData });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || `Error HTTP ${response.status}`);
+      return payload;
+    }
+
+    function showMessage(elementId, text, isError = false) {
+      const element = document.getElementById(elementId);
+      element.textContent = text;
+      element.classList.toggle("error", isError);
+      element.hidden = false;
+    }
+
+    function appendCell(row, value) {
+      const cell = document.createElement("td");
+      cell.textContent = value == null || value === "" ? "—" : String(value);
+      row.append(cell);
+    }
+
+    function replaceWithEmpty(body, columns, message) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.className = "empty";
+      cell.colSpan = columns;
+      cell.textContent = message;
+      row.append(cell);
+      body.replaceChildren(row);
+    }
+
+    async function refresh() {
+      const [userData, documentData] = await Promise.all([
+        request("/api/users"),
+        request("/api/documents"),
+      ]);
+      const usersById = new Map(userData.users.map((user) => [user.user_id, user]));
+
+      document.querySelector("#user-count").textContent = userData.users.length;
+      document.querySelector("#document-count").textContent = documentData.documents.length;
+      document.querySelector("#review-count").textContent =
+        documentData.documents.filter((document) => document.status === "needs_review").length;
+
+      const selectedPhone = userSelect.value;
+      userSelect.replaceChildren(new Option("Selecciona un usuario", ""));
+      for (const user of userData.users) {
+        const option = new Option(`${user.name} — ${user.phone}`, user.phone);
+        userSelect.add(option);
+      }
+      if (userData.users.some((user) => user.phone === selectedPhone)) userSelect.value = selectedPhone;
+
+      const usersBody = document.querySelector("#users-body");
+      if (userData.users.length === 0) {
+        replaceWithEmpty(usersBody, 4, "Todavía no hay usuarios registrados.");
+      } else {
+        usersBody.replaceChildren(...userData.users.map((user) => {
+          const row = document.createElement("tr");
+          appendCell(row, user.name);
+          appendCell(row, user.phone);
+          appendCell(row, user.employee_id);
+          appendCell(row, user.is_active ? "Activo" : "Inactivo");
+          return row;
+        }));
+      }
+
+      const documentsBody = document.querySelector("#documents-body");
+      if (documentData.documents.length === 0) {
+        replaceWithEmpty(documentsBody, 4, "Todavía no hay comprobantes.");
+      } else {
+        documentsBody.replaceChildren(...documentData.documents.map((document) => {
+          const row = document.createElement("tr");
+          const user = usersById.get(document.user_id);
+          appendCell(row, document.file_name);
+          appendCell(row, user ? user.name : "Usuario no disponible");
+          const statusCell = document.createElement("td");
+          const statusBadge = document.createElement("span");
+          statusBadge.className = `status${document.status === "needs_review" ? " review" : ""}`;
+          statusBadge.textContent = document.status === "needs_review" ? "Revisión" : document.status;
+          statusCell.append(statusBadge);
+          row.append(statusCell);
+          const fields = document.extracted_fields || {};
+          appendCell(row, `${fields.vendor || "Proveedor pendiente"} / ${fields.total ?? "Total pendiente"} ${fields.currency || ""}`.trim());
+          return row;
+        }));
+      }
+    }
+
+    userForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = userForm.querySelector("button");
+      button.disabled = true;
+      try {
+        const data = Object.fromEntries(new FormData(userForm));
+        const response = await request("/api/users", { method: "POST", body: JSON.stringify(data) });
+        userForm.reset();
+        showMessage("user-message", `Usuario registrado: ${response.user.name}.`);
+        await refresh();
+      } catch (error) {
+        showMessage("user-message", error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    documentForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = document.querySelector("#document-submit");
+      button.disabled = true;
+      document.querySelector("#document-result").textContent = "";
+      document.querySelector("#ocr-details").hidden = true;
+      try {
+        const formData = new FormData(documentForm);
+        const file = document.querySelector("#document-file").files[0];
+        let response;
+        if (file) {
+          formData.set("file", file);
+          response = await requestUpload(formData);
+        } else {
+          const fileName = String(formData.get("file_name") || "").trim();
+          const rawText = String(formData.get("raw_text") || "").trim();
+          if (!rawText) throw new Error("Sube una imagen/PDF o pega el texto del comprobante.");
+          if (!fileName) throw new Error("Indica un nombre de referencia para el comprobante.");
+          response = await request("/api/documents", {
+            method: "POST",
+            body: JSON.stringify({
+              phone: formData.get("phone"),
+              file_name: fileName,
+              raw_text: rawText,
+            }),
+          });
+        }
+        const fields = response.extracted_fields;
+        const notes = response.validation_notes.length ? response.validation_notes.join(" ") : "Sin observaciones.";
+        document.querySelector("#document-result").textContent =
+          `Estado: ${response.status} · Tipo: ${fields.document_type} · Proveedor: ${fields.vendor} · Total: ${fields.total ?? "no reconocido"} ${fields.currency} · Confianza: ${response.confidence}\n${notes}`;
+        if (response.ocr_text) {
+          document.querySelector("#ocr-text").textContent = response.ocr_text;
+          document.querySelector("#ocr-details").hidden = false;
+        }
+        showMessage(
+          "document-message",
+          response.status === "needs_review"
+            ? "Comprobante leído y guardado para revisión manual."
+            : "Comprobante leído, validado y guardado.",
+        );
+        documentForm.querySelector("#raw-text").value = "";
+        document.querySelector("#document-file").value = "";
+        document.querySelector("#file-name").value = "";
+        await refresh();
+      } catch (error) {
+        showMessage("document-message", error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    refresh().catch((error) => {
+      showMessage("document-message", `No se pudo cargar la información: ${error.message}`, true);
+    });
+  </script>
+</body>
+</html>

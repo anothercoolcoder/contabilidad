@@ -15,7 +15,13 @@ class ProcessingPipeline:
         self.ocr = OCRService()
         self.rag = RAGService()
 
-    def process_document(self, user_phone: str, file_name: str, raw_text: str) -> dict:
+    def process_document(
+        self,
+        user_phone: str,
+        file_name: str,
+        raw_text: str,
+        source: str = "whatsapp",
+    ) -> dict:
         user = self.database.get_user_by_phone(user_phone)
         if user is None:
             raise ValueError("El usuario debe estar registrado antes de enviar comprobantes.")
@@ -31,7 +37,7 @@ class ProcessingPipeline:
         payload = self.database.create_document(
             document_id=document_id,
             user_id=user["user_id"],
-            source="whatsapp",
+            source=source,
             file_name=file_name,
             raw_text=extracted_text,
             status=decision,
